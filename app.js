@@ -3,9 +3,9 @@
 
   const STORAGE_KEY = 'todos';
 
-  const form = document.getElementById('todo-form');
-  const input = document.getElementById('todo-input');
-  const list = document.getElementById('todo-list');
+  const form = typeof document !== 'undefined' ? document.getElementById('todo-form') : null;
+  const input = typeof document !== 'undefined' ? document.getElementById('todo-input') : null;
+  const list = typeof document !== 'undefined' ? document.getElementById('todo-list') : null;
 
   /** Load todos from localStorage, defaulting to an empty array. */
   function loadTodos() {
@@ -21,6 +21,27 @@
   /** Persist the current todos array to localStorage. */
   function saveTodos(todos) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+  }
+
+  /** Pure helper: returns a new array with a trimmed, non-empty todo appended. */
+  function addTodoToList(todos, text) {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      return todos;
+    }
+    return [...todos, { id: Date.now(), text: trimmed, completed: false }];
+  }
+
+  /** Pure helper: returns a new array with the matching todo's `completed` flipped. */
+  function toggleTodoInList(todos, id) {
+    return todos.map((todo) =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+  }
+
+  /** Pure helper: returns a new array with the matching todo removed. */
+  function deleteTodoFromList(todos, id) {
+    return todos.filter((todo) => todo.id !== id);
   }
 
   let todos = loadTodos();
@@ -89,25 +110,19 @@
   }
 
   function addTodo(text) {
-    const trimmed = text.trim();
-    if (!trimmed) {
-      return;
-    }
-    todos.push({ id: Date.now(), text: trimmed, completed: false });
+    todos = addTodoToList(todos, text);
     saveTodos(todos);
     render();
   }
 
   function toggleTodo(id) {
-    todos = todos.map((todo) =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo
-    );
+    todos = toggleTodoInList(todos, id);
     saveTodos(todos);
     render();
   }
 
   function deleteTodo(id) {
-    todos = todos.filter((todo) => todo.id !== id);
+    todos = deleteTodoFromList(todos, id);
     if (editingId === id) {
       editingId = null;
     }
@@ -131,69 +146,86 @@
     render();
   }
 
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    addTodo(input.value);
-    input.value = '';
-    input.focus();
-  });
+  if (typeof document !== 'undefined' && form) {
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      addTodo(input.value);
+      input.value = '';
+      input.focus();
+    });
 
-  // Event delegation for toggle/delete/edit on list items.
-  list.addEventListener('click', (event) => {
-    const li = event.target.closest('.todo-item');
-    if (!li) {
-      return;
-    }
-    const id = Number(li.dataset.id);
-
-    if (event.target.classList.contains('toggle-checkbox')) {
-      toggleTodo(id);
-    } else if (event.target.classList.contains('delete-btn')) {
-      deleteTodo(id);
-    } else if (event.target.classList.contains('edit-btn')) {
-      editingId = id;
-      render();
-    }
-  });
-
-  // Save/cancel handling for the in-place edit input.
-  list.addEventListener(
-    'keydown',
-    (event) => {
-      if (!event.target.classList.contains('todo-edit-input')) {
-        return;
-      }
+    // Event delegation for toggle/delete/edit on list items.
+    list.addEventListener('click', (event) => {
       const li = event.target.closest('.todo-item');
       if (!li) {
         return;
       }
       const id = Number(li.dataset.id);
 
-      if (event.key === 'Enter') {
-        editTodo(id, event.target.value);
-      } else if (event.key === 'Escape') {
-        editingId = null;
+      if (event.target.classList.contains('toggle-checkbox')) {
+        toggleTodo(id);
+      } else if (event.target.classList.contains('delete-btn')) {
+        deleteTodo(id);
+      } else if (event.target.classList.contains('edit-btn')) {
+        editingId = id;
         render();
       }
-    }
-  );
+    });
 
-  // Save on click-away (blur) from the edit input.
-  list.addEventListener(
-    'blur',
-    (event) => {
-      if (!event.target.classList.contains('todo-edit-input')) {
-        return;
-      }
-      const li = event.target.closest('.todo-item');
-      if (!li) {
-        return;
-      }
-      const id = Number(li.dataset.id);
-      editTodo(id, event.target.value);
-    },
-    true
-  );
+    // Save/cancel handling for the in-place edit input.
+    list.addEventListener(
+      'keydown',
+      (event) => {
+        if (!event.target.classList.contains('todo-edit-input')) {
+          return;
+        }
+        const li = event.target.closest('.todo-item');
+        if (!li) {
+          return;
+        }
+        const id = Number(li.dataset.id);
 
-  render();
+        if (event.key === 'Enter') {
+          editTodo(id, event.target.value);
+        } else if (event.key === 'Escape') {
+          editingId = null;
+          render();
+        }
+      }
+    );
+
+    // Save on click-away (blur) from the edit input.
+    list.addEventListener(
+      'blur',
+      (event) => {
+        if (!event.target.classList.contains('todo-edit-input')) {
+          return;
+        }
+        const li = event.target.closest('.todo-item');
+        if (!li) {
+          return;
+        }
+        const id = Number(li.dataset.id);
+        editTodo(id, event.target.value);
+      },
+      true
+    );
+
+    render();
+  }
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      loadTodos,
+      saveTodos,
+      addTodoToList,
+      toggleTodoInList,
+      deleteTodoFromList,
+      addTodo,
+      toggleTodo,
+      deleteTodo,
+      editTodo,
+      todos,
+    };
+  }
 })();

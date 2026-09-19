@@ -30,3 +30,9 @@ Tests use Node's built-in test runner (Node 18+), no dependencies required:
 ```bash
 node --test tests/
 ```
+
+Or, via npm:
+
+```bash
+npm test
+```

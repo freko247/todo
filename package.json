@@ -1,0 +1,9 @@
+{
+  "name": "todo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A simple todo list app built with plain HTML, CSS, and JavaScript.",
+  "scripts": {
+    "test": "node --test tests/"
+  }
+}

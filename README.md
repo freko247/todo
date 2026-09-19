@@ -22,3 +22,11 @@ No build step is required. Either:
 - Mark a todo as complete / uncomplete
 - Delete a todo
 - Todos persist across page reloads via `localStorage`
+
+## Running tests
+
+Tests use Node's built-in test runner (Node 18+), no dependencies required:
+
+```bash
+node --test tests/
+```

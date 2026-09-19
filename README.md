@@ -3,6 +3,12 @@
 A simple todo list app built with plain HTML, CSS, and JavaScript — no frameworks, no build
 tooling, no npm dependencies required.
 
+## Live demo
+
+The app auto-deploys to GitHub Pages on every push to `main` via GitHub Actions:
+
+https://freko247.github.io/todo/
+
 ## Running
 
 No build step is required. Either:

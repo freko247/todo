@@ -25,6 +25,9 @@
 
   let todos = loadTodos();
 
+  // Id of the todo currently being edited (in-place), or null if none.
+  let editingId = null;
+
   function render() {
     list.innerHTML = '';
 
@@ -46,9 +49,32 @@
       checkbox.checked = todo.completed;
       checkbox.className = 'toggle-checkbox';
 
-      const text = document.createElement('span');
-      text.className = 'todo-text';
-      text.textContent = todo.text;
+      li.appendChild(checkbox);
+
+      if (todo.id === editingId) {
+        const editInput = document.createElement('input');
+        editInput.type = 'text';
+        editInput.className = 'todo-edit-input';
+        editInput.value = todo.text;
+        li.appendChild(editInput);
+
+        // Focus and select once the input is in the DOM.
+        requestAnimationFrame(() => {
+          editInput.focus();
+          editInput.select();
+        });
+      } else {
+        const text = document.createElement('span');
+        text.className = 'todo-text';
+        text.textContent = todo.text;
+        li.appendChild(text);
+      }
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'edit-btn';
+      editBtn.textContent = '✎';
+      editBtn.setAttribute('aria-label', 'Edit todo');
 
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
@@ -56,8 +82,7 @@
       deleteBtn.textContent = '✕';
       deleteBtn.setAttribute('aria-label', 'Delete todo');
 
-      li.appendChild(checkbox);
-      li.appendChild(text);
+      li.appendChild(editBtn);
       li.appendChild(deleteBtn);
       list.appendChild(li);
     });
@@ -83,7 +108,26 @@
 
   function deleteTodo(id) {
     todos = todos.filter((todo) => todo.id !== id);
+    if (editingId === id) {
+      editingId = null;
+    }
     saveTodos(todos);
+    render();
+  }
+
+  /** Save the edited text for a todo, or exit edit mode without saving if empty. */
+  function editTodo(id, newText) {
+    const trimmed = newText.trim();
+    if (!trimmed) {
+      editingId = null;
+      render();
+      return;
+    }
+    todos = todos.map((todo) =>
+      todo.id === id ? { ...todo, text: trimmed } : todo
+    );
+    saveTodos(todos);
+    editingId = null;
     render();
   }
 
@@ -94,7 +138,7 @@
     input.focus();
   });
 
-  // Event delegation for toggle/delete on list items.
+  // Event delegation for toggle/delete/edit on list items.
   list.addEventListener('click', (event) => {
     const li = event.target.closest('.todo-item');
     if (!li) {
@@ -106,8 +150,50 @@
       toggleTodo(id);
     } else if (event.target.classList.contains('delete-btn')) {
       deleteTodo(id);
+    } else if (event.target.classList.contains('edit-btn')) {
+      editingId = id;
+      render();
     }
   });
+
+  // Save/cancel handling for the in-place edit input.
+  list.addEventListener(
+    'keydown',
+    (event) => {
+      if (!event.target.classList.contains('todo-edit-input')) {
+        return;
+      }
+      const li = event.target.closest('.todo-item');
+      if (!li) {
+        return;
+      }
+      const id = Number(li.dataset.id);
+
+      if (event.key === 'Enter') {
+        editTodo(id, event.target.value);
+      } else if (event.key === 'Escape') {
+        editingId = null;
+        render();
+      }
+    }
+  );
+
+  // Save on click-away (blur) from the edit input.
+  list.addEventListener(
+    'blur',
+    (event) => {
+      if (!event.target.classList.contains('todo-edit-input')) {
+        return;
+      }
+      const li = event.target.closest('.todo-item');
+      if (!li) {
+        return;
+      }
+      const id = Number(li.dataset.id);
+      editTodo(id, event.target.value);
+    },
+    true
+  );
 
   render();
 })();
